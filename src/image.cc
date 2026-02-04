@@ -1,7 +1,5 @@
 #include "image.hh"
 
-#define GRID_VERBOSE
-
 #include <stdint.h>
 #include <stdio.h>
 #include <string.h>
@@ -12,8 +10,6 @@
 #include <fstream>
 #include <vector>
 #include <string>
-
-#include <iostream>
 
 struct File {
 	std::string name;
@@ -54,20 +50,6 @@ size_t calculate_table_size(const Directory &idir, bool recursive = false) {
 
 	for(const File &file : idir.files) {
 		result += 1 + file.name.size() + 1 + sizeof(size_t);
-	}
-
-	return result;
-}
-
-size_t calculate_data_bunch(const Directory &idir) {
-	size_t result = 0;
-
-	for(const Directory &dir : idir.directories) {
-		result += calculate_data_bunch(dir);
-	}
-
-	for(const File &file : idir.files) {
-		result += sizeof(size_t) + file.size;
 	}
 
 	return result;
@@ -207,15 +189,6 @@ bool read_gridfile(const std::filesystem::path &ipath, std::filesystem::path &or
 }
 
 bool image(const std::filesystem::path &igridfile) {
-#ifdef GRID_VERBOSE
-	fprintf(stdout,
-R"(Context says:
-	PATH  %s
-)",
-		igridfile.c_str()
-	);
-#endif
-
 	std::filesystem::path root_path, img_path;
 
 	// read gridfile
@@ -230,32 +203,11 @@ R"(Context says:
 		return false;
 	}
 
-#ifdef GRID_VERBOSE
-	fprintf(stdout,
-R"(Gridfile says:
-	ROOT  %s
-	IMAGE %s
-)",
-		root_path.c_str(), img_path.c_str()
-	);
-#endif
-
 	// collecting files
 	Directory root = { "", {}, {} };
 	gather_directory(root_path, root);
 
 	size_t table_size = calculate_table_size(root, true);
-	size_t bunch_size = calculate_data_bunch(root);
-
-#ifdef GRID_VERBOSE
-	fprintf(stdout,
-R"(Map says:
-	TABLES %lu
-	BUNCH  %lu
-)",
-		table_size, bunch_size
-	);
-#endif
 
 	// writing
 
