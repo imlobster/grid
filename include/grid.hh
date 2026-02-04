@@ -23,10 +23,13 @@
 
 #include <unordered_map>
 
-constexpr std::uint8_t SIZE_SIZE = sizeof(std::size_t);
+namespace {
+	constexpr std::uint8_t SIZE_SIZE = sizeof(std::size_t);
+}
 
 namespace grid {
 
+// Analogue of std::filesystem::path for Grid
 struct Path {
 	static constexpr char SEPARATOR = '/';
 
@@ -34,7 +37,9 @@ public:
 	std::vector<std::string> path;
 
 public:
+	// Is path empty?
 	bool empty(void) const noexcept { return path.empty(); }
+	// Clear path
 	void clear(void) noexcept { path.clear(); return; }
 
 	bool has_parent_path(void) const { return path.size() >= 2; }
@@ -53,6 +58,7 @@ public:
 		return path.back();
 	}
 
+	// Filename without extension
 	std::string stem(void) const {
 		if(path.size() <= 0)
 			return "";
@@ -227,12 +233,15 @@ private:
 	std::size_t bunch_offset;
 
 public:
+	// Read file content
 	bool read(const Path &ipath, std::vector<char> &odata) {
 		if(ipath.empty()) { return false; }
 
 		std::size_t offset = 0;
 
 		{
+			// Searching for the entry by path
+
 			const Table *actual = &table_;
 
 			for(std::size_t i = 0; i < ipath.path.size() - 1; ++i) {
@@ -243,6 +252,8 @@ public:
 
 				actual = &(it->second);
 			}
+
+			// Take an offset from the entry
 
 			{
 				auto found = actual->contained.find(ipath.path.back());
@@ -259,6 +270,8 @@ public:
 
 			stream_.seekg(offset, std::ios::beg);
 
+			// Read entry size
+
 			{
 				std::uint8_t entry_size_bytes[SIZE_SIZE];
 				stream_.read((char*)entry_size_bytes, SIZE_SIZE);
@@ -270,6 +283,8 @@ public:
 					entry_size |= ((size_t)entry_size_bytes[i]) << (8 * i);
 				}
 			}
+
+			// Write out entry content by chunks
 
 			constexpr std::size_t BUFFSZ = 4096;
 
@@ -300,6 +315,8 @@ private:
 	bool read_in_table_(Table& otable) {
 		std::size_t table_size = 0;
 
+		// Read table size
+
 		{
 			std::uint8_t table_size_bytes[SIZE_SIZE];
 			stream_.read((char*)table_size_bytes, SIZE_SIZE);
@@ -315,6 +332,8 @@ private:
 		for(std::size_t i = 0; i < table_size; ++i) {
 			bool is_directory;
 
+			// Read node type
+
 			{
 				std::uint8_t c;
 
@@ -327,6 +346,8 @@ private:
 
 			std::string name = "";
 
+			// Read node name
+
 			{
 				std::uint8_t read[64];
 				bool end = false;
@@ -335,7 +356,7 @@ private:
 					stream_.read((char*)read, sizeof(read));
 					std::streamsize rest = stream_.gcount();
 
-					for(long i = 0; i < rest; ++i) {
+					for(std::streamsize i = 0; i < rest; ++i) {
 						if((char)read[i] != '\0')
 							continue;
 
@@ -352,6 +373,8 @@ private:
 
 			std::size_t pointing = 0;
 
+			// Read node pointer
+
 			{
 				std::uint8_t offset_bytes[SIZE_SIZE];
 				stream_.read((char*)offset_bytes, SIZE_SIZE);
@@ -364,7 +387,11 @@ private:
 				}
 			}
 
+			// Add a node to the table
+
 			if(is_directory) {
+				// If this node is a table too, call this method
+
 				Table nested_table;
 
 				std::size_t was_here = stream_.tellg();
@@ -391,6 +418,8 @@ public:
 
 		{
 			std::size_t table_size = 0;
+
+			// Read all tables size
 
 			{
 				stream_.seekg(0, std::ios::end);
