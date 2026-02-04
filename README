@@ -1,0 +1,76 @@
+grid -- is an archiver written in C++ focused on random
+access.  It is meant for reading from code and writing wtih
+a special utility.
+
+
+
+        [DISCLAIMER]
+    This tool is not tested
+    and may contain bugs.
+
+
+
+To use it follow this instruction:
+
+    First of all, compile 'grid' utility.
+
+        On Linux, run 'build.sh'.
+
+        On Windows, build it with CMake.
+
+    Then setup your source folder.
+
+        Create new directory.
+
+        Create another directory in the new one.  It will be
+        the root for grid.  Your content belongs here.
+
+        Create a file, for clarity, call it '.gridfile'.
+
+        Gridfile must contain only two lines.  First one for
+        the root directory, second one for the image
+        destination.
+
+        On Linux, you can make a build script for this:
+
+            #!/usr/bin/env sh
+
+            if ! type grid >/dev/null 2>&1; then
+                exit 127
+            fi
+
+            gridfile=".gridfile"
+
+            out="assets.pak"
+            root="root"
+
+            printf "$root\n$out\n" > "$gridfile" || exit
+            grid "$gridfile" || exit
+
+    Now, when the image part done, we can move to the
+    scripting API.
+
+        In the include directory of this repository, there
+        is a file called 'grid.hh'.  This is a header-only
+        grid reading library for C++17+.
+
+        Move it in one of your project's include paths to
+        install it.
+
+        The usage is simple:
+
+            There is a type named grid::Path.  It has pretty
+            much similiar methods to the original
+            std::filesystem::path one.  You will use it for
+            paths in a grid::Grid.
+
+            There is a simple code that opens an image and
+            reades a file content:
+
+                grid::Grid assets("./assets.pak");
+
+                std::vector<char> player_sprite;
+                assets.read("/sprites/player.png", player_sprite);
+
+    But looking inside of the 'grid.hh' will give you more info.
+
