@@ -233,81 +233,328 @@ private:
 	std::size_t bunch_offset;
 
 public:
-	// Read file content
-	bool read(const Path &ipath, std::vector<char> &odata) {
-		if(ipath.empty()) { return false; }
+
+	// Is directory
+	bool is_directory(const Path &ipath) {
+		if(ipath.empty())
+			return false;
+
+		// Searching for the directory by path
+
+		const Table *actual = &table_;
+
+		for(std::size_t i = 0; i < ipath.path.size() - 1; ++i) {
+			auto it = actual->nested.find(ipath.path[i]);
+
+			if(it == actual->nested.end())
+				return false;
+
+			actual = &(it->second);
+		}
+
+		return actual->nested.contains(ipath.path.back());
+	}
+
+	bool is_directory(const Path &ipath, const Table &itable) {
+		if(ipath.empty())
+			return false;
+
+		// Searching for the directory by path
+
+		const Table *actual = &itable;
+
+		for(std::size_t i = 0; i < ipath.path.size() - 1; ++i) {
+			auto it = actual->nested.find(ipath.path[i]);
+
+			if(it == actual->nested.end())
+				return false;
+
+			actual = &(it->second);
+		}
+
+		return actual->nested.contains(ipath.path.back());
+	}
+
+	// Is regular file
+	bool is_regular_file(const Path &ipath) {
+		if(ipath.empty())
+			return 0;
+
+		// Searching for the entry by path
+
+		const Table *actual = &table_;
+
+		for(std::size_t i = 0; i < ipath.path.size() - 1; ++i) {
+			auto it = actual->nested.find(ipath.path[i]);
+
+			if(it == actual->nested.end())
+				return false;
+
+			actual = &(it->second);
+		}
+
+		return actual->contained.contains(ipath.path.back());;
+	}
+
+	bool is_regular_file(const Path &ipath, const Table &itable) {
+		if(ipath.empty())
+			return false;
+
+		// Searching for the entry by path
+
+		const Table *actual = &itable;
+
+		for(std::size_t i = 0; i < ipath.path.size() - 1; ++i) {
+			auto it = actual->nested.find(ipath.path[i]);
+
+			if(it == actual->nested.end())
+				return false;
+
+			actual = &(it->second);
+		}
+
+		return actual->contained.contains(ipath.path.back());;
+	}
+
+	// Exists
+	bool exists(const Path &ipath) {
+		if(ipath.empty())
+			return false;
+
+		// Searching for the entry by path
+
+		const Table *actual = &table_;
+
+		for(std::size_t i = 0; i < ipath.path.size() - 1; ++i) {
+			auto it = actual->nested.find(ipath.path[i]);
+
+			if(it == actual->nested.end())
+				return false;
+
+			actual = &(it->second);
+		}
+
+		return actual->nested.contains(ipath.path.back()) || actual->contained.contains(ipath.path.back());
+	}
+
+	bool exists(const Path &ipath, const Table &itable) {
+		if(ipath.empty())
+			return false;
+
+		// Searching for the entry by path
+
+		const Table *actual = &itable;
+
+		for(std::size_t i = 0; i < ipath.path.size() - 1; ++i) {
+			auto it = actual->nested.find(ipath.path[i]);
+
+			if(it == actual->nested.end())
+				return false;
+
+			actual = &(it->second);
+		}
+
+		return actual->nested.contains(ipath.path.back()) || actual->contained.contains(ipath.path.back());
+	}
+
+	// Find directory
+	bool find_directory(const Path &ipath, Table &otable) {
+		if(ipath.empty())
+			return false;
+
+		// Searching for the directory by path
+
+		const Table *actual = &table_;
+
+		for(std::size_t i = 0; i < ipath.path.size() - 1; ++i) {
+			auto it = actual->nested.find(ipath.path[i]);
+
+			if(it == actual->nested.end())
+				return false;
+
+			actual = &(it->second);
+		}
+
+		// Take a table from the directory
+
+		{
+			auto found = actual->nested.find(ipath.path.back());
+
+			if(found == actual->nested.end())
+				return false;
+
+			otable = found->second;
+		}
+
+		return true;
+	}
+
+	// Find directory in directory
+	bool find_directory(const Path &ipath, Table &otable, const Table &itable) {
+		if(ipath.empty())
+			return false;
+
+		// Searching for the directory by path
+
+		const Table *actual = &itable;
+
+		for(std::size_t i = 0; i < ipath.path.size() - 1; ++i) {
+			auto it = actual->nested.find(ipath.path[i]);
+
+			if(it == actual->nested.end())
+				return false;
+
+			actual = &(it->second);
+		}
+
+		// Take a table from the directory
+
+		{
+			auto found = actual->nested.find(ipath.path.back());
+
+			if(found == actual->nested.end())
+				return false;
+
+			otable = found->second;
+		}
+
+		return true;
+	}
+
+	// Find file
+	std::size_t find_file(const Path &ipath) {
+		if(ipath.empty())
+			return 0;
 
 		std::size_t offset = 0;
 
+		// Searching for the entry by path
+
+		const Table *actual = &table_;
+
+		for(std::size_t i = 0; i < ipath.path.size() - 1; ++i) {
+			auto it = actual->nested.find(ipath.path[i]);
+
+			if(it == actual->nested.end())
+				return 0;
+
+			actual = &(it->second);
+		}
+
+		// Take an offset from the entry
+
 		{
-			// Searching for the entry by path
+			auto found = actual->contained.find(ipath.path.back());
 
-			const Table *actual = &table_;
+			if(found == actual->contained.end())
+				return 0;
 
-			for(std::size_t i = 0; i < ipath.path.size() - 1; ++i) {
-				auto it = actual->nested.find(ipath.path[i]);
+			offset = found->second;
+		}
 
-				if(it == actual->nested.end())
-					return false;
+		return offset;
+	}
 
-				actual = &(it->second);
-			}
+	// Find file in directory
+	std::size_t find_file(const Path &ipath, const Table &itable) {
+		if(ipath.empty())
+			return 0;
 
-			// Take an offset from the entry
+		std::size_t offset = 0;
 
-			{
-				auto found = actual->contained.find(ipath.path.back());
+		// Searching for the entry by path
 
-				if(found == actual->contained.end())
-					return false;
+		const Table *actual = &itable;
 
-				offset = found->second;
+		for(std::size_t i = 0; i < ipath.path.size() - 1; ++i) {
+			auto it = actual->nested.find(ipath.path[i]);
+
+			if(it == actual->nested.end())
+				return 0;
+
+			actual = &(it->second);
+		}
+
+		// Take an offset from the entry
+
+		{
+			auto found = actual->contained.find(ipath.path.back());
+
+			if(found == actual->contained.end())
+				return 0;
+
+			offset = found->second;
+		}
+
+		return offset;
+	}
+
+	// Get file content
+	bool get_file_content(std::size_t ioffset, std::vector<char> &odata) {
+		std::size_t entry_size = 0;
+
+		stream_.seekg(ioffset, std::ios::beg);
+
+		// Read entry size
+
+		{
+			std::uint8_t entry_size_bytes[SIZE_SIZE];
+			stream_.read((char*)entry_size_bytes, SIZE_SIZE);
+
+			if(stream_.gcount() != SIZE_SIZE)
+				return false;
+
+			for(std::size_t i = 0; i < SIZE_SIZE; ++i) {
+				entry_size |= ((size_t)entry_size_bytes[i]) << (8 * i);
 			}
 		}
 
+		// Write out entry content by chunks
+
 		{
-			std::size_t entry_size = 0;
-
-			stream_.seekg(offset, std::ios::beg);
-
-			// Read entry size
-
-			{
-				std::uint8_t entry_size_bytes[SIZE_SIZE];
-				stream_.read((char*)entry_size_bytes, SIZE_SIZE);
-
-				if(stream_.gcount() != SIZE_SIZE)
-					return false;
-
-				for(std::size_t i = 0; i < SIZE_SIZE; ++i) {
-					entry_size |= ((size_t)entry_size_bytes[i]) << (8 * i);
-				}
-			}
-
-			// Write out entry content by chunks
-
 			constexpr std::size_t BUFFSZ = 4096;
-
-			std::uint8_t read[BUFFSZ];
 			std::size_t rest = entry_size;
 
-			odata.reserve(entry_size);
+			odata.resize(entry_size);
+
+			std::size_t offset = 0;
 
 			while(rest >= 1) {
 				std::size_t to_read = rest < BUFFSZ ? rest : BUFFSZ;
 
-				stream_.read((char*)read, to_read);
+				stream_.read((char*)odata.data() + offset, to_read);
 
 				if(stream_.gcount() != static_cast<std::streamsize>(to_read))
 					return false;
 
-				odata.insert(odata.end(), (char*)read, (char*)read + to_read);
-
-				rest -= to_read;
+				offset += to_read;
+				rest   -= to_read;
 			}
 		}
 
 		return true;
+	}
+
+	bool read(const Path &ipath, std::vector<char> &odata) {
+		if(ipath.empty())
+			return false;
+
+		std::size_t offset = find_file(ipath);
+		if(!offset)
+			return false;
+
+		return get_file_content(offset, odata);
+	}
+
+	bool read(const Path &ipath, std::vector<char> &odata, const Table &itable) {
+		if(ipath.empty())
+			return false;
+
+		std::size_t offset = find_file(ipath, itable);
+		if(!offset)
+			return false;
+
+		return get_file_content(offset, odata);
 	}
 
 private:
@@ -391,7 +638,6 @@ private:
 
 			if(is_directory) {
 				// If this node is a table too, call this method
-
 				Table nested_table;
 
 				std::size_t was_here = stream_.tellg();
