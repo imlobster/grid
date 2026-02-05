@@ -118,6 +118,7 @@ public:
 private:
 
 	void build_path_(const std::string &istr, std::vector<std::string> &opath) const {
+		opath.clear();
 		std::size_t start = 0;
 
 		while(start < istr.size()) {
