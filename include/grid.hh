@@ -34,9 +34,11 @@ struct Path {
 	static constexpr char SEPARATOR = '/';
 
 public:
+
 	std::vector<std::string> path;
 
 public:
+
 	// Is path empty?
 	bool empty(void) const noexcept { return path.empty(); }
 	// Clear path
@@ -114,6 +116,7 @@ public:
 	}
 
 private:
+
 	void build_path_(const std::string &istr, std::vector<std::string> &opath) const {
 		std::size_t start = 0;
 
@@ -137,6 +140,7 @@ private:
 	}
 
 public:
+
 	bool operator==(const Path &ipath) {
 		if(ipath.path.size() != path.size())
 			return false;
@@ -149,6 +153,7 @@ public:
 		return true;
 	}
 
+	Path(void) = default;
 
 	Path operator+(const std::string &istr) const {
 		Path new_path = *this;
@@ -214,7 +219,7 @@ public:
 		return *this;
 	}
 
-	~Path() = default;
+	~Path(void) = default;
 };
 
 struct Grid {
@@ -224,37 +229,34 @@ struct Grid {
 		std::unordered_map<std::string, Table> nested;
 		std::unordered_map<std::string, Entry> contained;
 
-		~Table() = default;
+		~Table(void) = default;
 	};
 
 private:
+
 	std::ifstream stream_;
 	Table table_;
 	std::size_t bunch_offset;
 
 public:
 
-	// Is directory
-	bool is_directory(const Path &ipath) {
-		if(ipath.empty())
+	bool find_parent_table(const Path &ipath, const Table* &otable) {
+		if(ipath.empty() || !otable)
 			return false;
 
-		// Searching for the directory by path
-
-		const Table *actual = &table_;
-
 		for(std::size_t i = 0; i < ipath.path.size() - 1; ++i) {
-			auto it = actual->nested.find(ipath.path[i]);
+			auto it = otable->nested.find(ipath.path[i]);
 
-			if(it == actual->nested.end())
+			if(it == otable->nested.end())
 				return false;
 
-			actual = &(it->second);
+			otable = &(it->second);
 		}
 
-		return actual->nested.contains(ipath.path.back());
+		return true;
 	}
 
+	// Is directory in directory
 	bool is_directory(const Path &ipath, const Table &itable) {
 		if(ipath.empty())
 			return false;
@@ -262,40 +264,18 @@ public:
 		// Searching for the directory by path
 
 		const Table *actual = &itable;
-
-		for(std::size_t i = 0; i < ipath.path.size() - 1; ++i) {
-			auto it = actual->nested.find(ipath.path[i]);
-
-			if(it == actual->nested.end())
-				return false;
-
-			actual = &(it->second);
-		}
+		if(!find_parent_table(ipath, actual))
+			return false;
 
 		return actual->nested.contains(ipath.path.back());
 	}
 
-	// Is regular file
-	bool is_regular_file(const Path &ipath) {
-		if(ipath.empty())
-			return 0;
-
-		// Searching for the entry by path
-
-		const Table *actual = &table_;
-
-		for(std::size_t i = 0; i < ipath.path.size() - 1; ++i) {
-			auto it = actual->nested.find(ipath.path[i]);
-
-			if(it == actual->nested.end())
-				return false;
-
-			actual = &(it->second);
-		}
-
-		return actual->contained.contains(ipath.path.back());;
+	// Is directory
+	bool is_directory(const Path &ipath) {
+		return is_directory(ipath, table_);
 	}
 
+	// Is regular file in directory
 	bool is_regular_file(const Path &ipath, const Table &itable) {
 		if(ipath.empty())
 			return false;
@@ -303,40 +283,18 @@ public:
 		// Searching for the entry by path
 
 		const Table *actual = &itable;
-
-		for(std::size_t i = 0; i < ipath.path.size() - 1; ++i) {
-			auto it = actual->nested.find(ipath.path[i]);
-
-			if(it == actual->nested.end())
-				return false;
-
-			actual = &(it->second);
-		}
+		if(!find_parent_table(ipath, actual))
+			return false;
 
 		return actual->contained.contains(ipath.path.back());;
 	}
 
-	// Exists
-	bool exists(const Path &ipath) {
-		if(ipath.empty())
-			return false;
-
-		// Searching for the entry by path
-
-		const Table *actual = &table_;
-
-		for(std::size_t i = 0; i < ipath.path.size() - 1; ++i) {
-			auto it = actual->nested.find(ipath.path[i]);
-
-			if(it == actual->nested.end())
-				return false;
-
-			actual = &(it->second);
-		}
-
-		return actual->nested.contains(ipath.path.back()) || actual->contained.contains(ipath.path.back());
+	// Is regular file
+	bool is_regular_file(const Path &ipath) {
+		return is_regular_file(ipath, table_);
 	}
 
+	// Exists in directory
 	bool exists(const Path &ipath, const Table &itable) {
 		if(ipath.empty())
 			return false;
@@ -344,49 +302,15 @@ public:
 		// Searching for the entry by path
 
 		const Table *actual = &itable;
-
-		for(std::size_t i = 0; i < ipath.path.size() - 1; ++i) {
-			auto it = actual->nested.find(ipath.path[i]);
-
-			if(it == actual->nested.end())
-				return false;
-
-			actual = &(it->second);
-		}
+		if(!find_parent_table(ipath, actual))
+			return false;
 
 		return actual->nested.contains(ipath.path.back()) || actual->contained.contains(ipath.path.back());
 	}
 
-	// Find directory
-	bool find_directory(const Path &ipath, Table &otable) {
-		if(ipath.empty())
-			return false;
-
-		// Searching for the directory by path
-
-		const Table *actual = &table_;
-
-		for(std::size_t i = 0; i < ipath.path.size() - 1; ++i) {
-			auto it = actual->nested.find(ipath.path[i]);
-
-			if(it == actual->nested.end())
-				return false;
-
-			actual = &(it->second);
-		}
-
-		// Take a table from the directory
-
-		{
-			auto found = actual->nested.find(ipath.path.back());
-
-			if(found == actual->nested.end())
-				return false;
-
-			otable = found->second;
-		}
-
-		return true;
+	// Exists
+	bool exists(const Path &ipath) {
+		return exists(ipath, table_);
 	}
 
 	// Find directory in directory
@@ -397,15 +321,8 @@ public:
 		// Searching for the directory by path
 
 		const Table *actual = &itable;
-
-		for(std::size_t i = 0; i < ipath.path.size() - 1; ++i) {
-			auto it = actual->nested.find(ipath.path[i]);
-
-			if(it == actual->nested.end())
-				return false;
-
-			actual = &(it->second);
-		}
+		if(!find_parent_table(ipath, actual))
+			return false;
 
 		// Take a table from the directory
 
@@ -421,38 +338,9 @@ public:
 		return true;
 	}
 
-	// Find file
-	std::size_t find_file(const Path &ipath) {
-		if(ipath.empty())
-			return 0;
-
-		std::size_t offset = 0;
-
-		// Searching for the entry by path
-
-		const Table *actual = &table_;
-
-		for(std::size_t i = 0; i < ipath.path.size() - 1; ++i) {
-			auto it = actual->nested.find(ipath.path[i]);
-
-			if(it == actual->nested.end())
-				return 0;
-
-			actual = &(it->second);
-		}
-
-		// Take an offset from the entry
-
-		{
-			auto found = actual->contained.find(ipath.path.back());
-
-			if(found == actual->contained.end())
-				return 0;
-
-			offset = found->second;
-		}
-
-		return offset;
+	// Find directory
+	bool find_directory(const Path &ipath, Table &otable) {
+		return find_directory(ipath, otable, table_);
 	}
 
 	// Find file in directory
@@ -465,15 +353,8 @@ public:
 		// Searching for the entry by path
 
 		const Table *actual = &itable;
-
-		for(std::size_t i = 0; i < ipath.path.size() - 1; ++i) {
-			auto it = actual->nested.find(ipath.path[i]);
-
-			if(it == actual->nested.end())
-				return 0;
-
-			actual = &(it->second);
-		}
+		if(!find_parent_table(ipath, actual))
+			return false;
 
 		// Take an offset from the entry
 
@@ -487,6 +368,11 @@ public:
 		}
 
 		return offset;
+	}
+
+	// Find file
+	std::size_t find_file(const Path &ipath) {
+		return find_file(ipath, table_);
 	}
 
 	// Get file content
@@ -535,17 +421,7 @@ public:
 		return true;
 	}
 
-	bool read(const Path &ipath, std::vector<char> &odata) {
-		if(ipath.empty())
-			return false;
-
-		std::size_t offset = find_file(ipath);
-		if(!offset)
-			return false;
-
-		return get_file_content(offset, odata);
-	}
-
+	// Read file in directory
 	bool read(const Path &ipath, std::vector<char> &odata, const Table &itable) {
 		if(ipath.empty())
 			return false;
@@ -557,8 +433,14 @@ public:
 		return get_file_content(offset, odata);
 	}
 
+	// Read file
+	bool read(const Path &ipath, std::vector<char> &odata) {
+		return read(ipath, odata, table_);
+	}
+
 private:
 
+	// Read file in table
 	bool read_in_table_(Table& otable) {
 		std::size_t table_size = 0;
 
@@ -656,6 +538,7 @@ private:
 	}
 
 public:
+
 	Grid(const std::filesystem::path &ipath) {
 		stream_.open(ipath, std::ios::binary);
 
@@ -696,7 +579,7 @@ public:
 		}
 	}
 
-	~Grid() = default;
+	~Grid(void) = default;
 };
 
 }
