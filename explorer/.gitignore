@@ -1,0 +1,12 @@
+# cmake
+/build/
+
+# clangd
+/.cache/
+
+# backups
+*.bak
+*.old
+
+# binary files
+/bin/

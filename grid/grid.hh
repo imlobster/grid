@@ -9,6 +9,17 @@
 	to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
 	copies of the Software, and to permit persons to whom the Software is
 	furnished to do so, subject to the following conditions:
+
+	The above copyright notice and this permission notice shall be included in all
+	copies or substantial portions of the Software.
+
+	THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+	IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+	FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+	AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+	LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+	OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+	SOFTWARE.
 */
 
 #pragma once
@@ -236,8 +247,10 @@ struct Grid {
 private:
 
 	std::ifstream stream_;
-	Table table_;
 	std::size_t bunch_offset;
+
+public:
+	Table table;
 
 public:
 
@@ -273,7 +286,7 @@ public:
 
 	// Is directory
 	bool is_directory(const Path &ipath) {
-		return is_directory(ipath, table_);
+		return is_directory(ipath, table);
 	}
 
 	// Is regular file in directory
@@ -292,7 +305,7 @@ public:
 
 	// Is regular file
 	bool is_regular_file(const Path &ipath) {
-		return is_regular_file(ipath, table_);
+		return is_regular_file(ipath, table);
 	}
 
 	// Exists in directory
@@ -311,7 +324,7 @@ public:
 
 	// Exists
 	bool exists(const Path &ipath) {
-		return exists(ipath, table_);
+		return exists(ipath, table);
 	}
 
 	// Find directory in directory
@@ -341,7 +354,7 @@ public:
 
 	// Find directory
 	bool find_directory(const Path &ipath, Table &otable) {
-		return find_directory(ipath, otable, table_);
+		return find_directory(ipath, otable, table);
 	}
 
 	// Find file in directory
@@ -373,7 +386,7 @@ public:
 
 	// Find file
 	std::size_t find_file(const Path &ipath) {
-		return find_file(ipath, table_);
+		return find_file(ipath, table);
 	}
 
 	// Get file content
@@ -436,30 +449,30 @@ public:
 
 	// Read file
 	bool read(const Path &ipath, std::vector<char> &odata) {
-		return read(ipath, odata, table_);
+		return read(ipath, odata, table);
 	}
 
 private:
 
 	// Read file in table
-	bool read_in_table_(Table& otable) {
-		std::size_t table_size = 0;
+	bool read_in_table(Table& otable) {
+		std::size_t tablesize = 0;
 
 		// Read table size
 
 		{
-			std::uint8_t table_size_bytes[SIZE_SIZE];
-			stream_.read((char*)table_size_bytes, SIZE_SIZE);
+			std::uint8_t tablesize_bytes[SIZE_SIZE];
+			stream_.read((char*)tablesize_bytes, SIZE_SIZE);
 
 			if(stream_.gcount() != SIZE_SIZE)
 				return false;
 
 			for(std::size_t i = 0; i < SIZE_SIZE; ++i) {
-				table_size |= ((size_t)table_size_bytes[i]) << (8 * i);
+				tablesize |= ((size_t)tablesize_bytes[i]) << (8 * i);
 			}
 		}
 
-		for(std::size_t i = 0; i < table_size; ++i) {
+		for(std::size_t i = 0; i < tablesize; ++i) {
 			bool is_directory;
 
 			// Read node type
@@ -526,7 +539,7 @@ private:
 				std::size_t was_here = stream_.tellg();
 
 				stream_.seekg(pointing, std::ios::beg);
-				read_in_table_(nested_table);
+				read_in_table(nested_table);
 
 				otable.nested.emplace(name, nested_table);
 				stream_.seekg(was_here, std::ios::beg);
@@ -547,7 +560,7 @@ public:
 			throw std::ios_base::failure("Unable to open file for reading");
 
 		{
-			std::size_t table_size = 0;
+			std::size_t tablesize = 0;
 
 			// Read all tables size
 
@@ -559,23 +572,23 @@ public:
 				if(file_size < SIZE_SIZE)
 					throw std::runtime_error("File corrupted");
 
-				std::uint8_t table_size_bytes[SIZE_SIZE];
-				stream_.read((char*)table_size_bytes, SIZE_SIZE);
+				std::uint8_t tablesize_bytes[SIZE_SIZE];
+				stream_.read((char*)tablesize_bytes, SIZE_SIZE);
 
 				if(stream_.gcount() != SIZE_SIZE)
 					throw std::ios_base::failure("Unable to read file");
 
 				for(std::uint8_t i = 0; i < SIZE_SIZE; ++i) {
-					table_size |= ((size_t)table_size_bytes[i]) << (8 * i);
+					tablesize |= ((size_t)tablesize_bytes[i]) << (8 * i);
 				}
 
-				if(file_size < table_size)
+				if(file_size < tablesize)
 					throw std::runtime_error("File corrupted");
 			}
 
-			bunch_offset = SIZE_SIZE + table_size;
+			bunch_offset = SIZE_SIZE + tablesize;
 
-			if(!read_in_table_(table_))
+			if(!read_in_table(table))
 				throw std::runtime_error("Grid corrupted");
 		}
 	}

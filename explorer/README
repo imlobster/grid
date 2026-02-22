@@ -1,0 +1,31 @@
+
+Use this app to look into grid packed files.
+
+
+To use it follow this instruction:
+
+    First of all, compile 'grider' utility.
+
+        On Linux, run 'build.sh'.
+
+        On Windows, build it with CMake.
+
+    Then just follow this format:
+
+        grider <grid> ( ls | cat ) "<path>"
+
+    Even empty path should be quoted.
+
+    Path is always absolute from the root.
+
+
+Commands:
+
+    cat prints file content into stdout.
+
+    ls prints directory content into stdout:
+
+        the path is quoted on top of the output.
+        directories are painted blue.
+        files are painted green.
+
