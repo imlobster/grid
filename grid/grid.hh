@@ -455,24 +455,24 @@ public:
 private:
 
 	// Read file in table
-	bool read_in_table(Table& otable) {
-		std::size_t tablesize = 0;
+	bool read_in_table_(Table& otable) {
+		std::size_t table_size = 0;
 
 		// Read table size
 
 		{
-			std::uint8_t tablesize_bytes[SIZE_SIZE];
-			stream_.read((char*)tablesize_bytes, SIZE_SIZE);
+			std::uint8_t table_size_bytes[SIZE_SIZE];
+			stream_.read((char*)table_size_bytes, SIZE_SIZE);
 
 			if(stream_.gcount() != SIZE_SIZE)
 				return false;
 
 			for(std::size_t i = 0; i < SIZE_SIZE; ++i) {
-				tablesize |= ((size_t)tablesize_bytes[i]) << (8 * i);
+				table_size |= ((size_t)table_size_bytes[i]) << (8 * i);
 			}
 		}
 
-		for(std::size_t i = 0; i < tablesize; ++i) {
+		for(std::size_t i = 0; i < table_size; ++i) {
 			bool is_directory;
 
 			// Read node type
@@ -539,7 +539,7 @@ private:
 				std::size_t was_here = stream_.tellg();
 
 				stream_.seekg(pointing, std::ios::beg);
-				read_in_table(nested_table);
+				read_in_table_(nested_table);
 
 				otable.nested.emplace(name, nested_table);
 				stream_.seekg(was_here, std::ios::beg);
@@ -560,7 +560,7 @@ public:
 			throw std::ios_base::failure("Unable to open file for reading");
 
 		{
-			std::size_t tablesize = 0;
+			std::size_t table_size = 0;
 
 			// Read all tables size
 
@@ -572,23 +572,23 @@ public:
 				if(file_size < SIZE_SIZE)
 					throw std::runtime_error("File corrupted");
 
-				std::uint8_t tablesize_bytes[SIZE_SIZE];
-				stream_.read((char*)tablesize_bytes, SIZE_SIZE);
+				std::uint8_t table_size_bytes[SIZE_SIZE];
+				stream_.read((char*)table_size_bytes, SIZE_SIZE);
 
 				if(stream_.gcount() != SIZE_SIZE)
 					throw std::ios_base::failure("Unable to read file");
 
 				for(std::uint8_t i = 0; i < SIZE_SIZE; ++i) {
-					tablesize |= ((size_t)tablesize_bytes[i]) << (8 * i);
+					table_size |= ((size_t)table_size_bytes[i]) << (8 * i);
 				}
 
-				if(file_size < tablesize)
+				if(file_size < table_size)
 					throw std::runtime_error("File corrupted");
 			}
 
-			bunch_offset = SIZE_SIZE + tablesize;
+			bunch_offset = SIZE_SIZE + table_size;
 
-			if(!read_in_table(table))
+			if(!read_in_table_(table))
 				throw std::runtime_error("Grid corrupted");
 		}
 	}
